@@ -81,19 +81,10 @@ def send_driver():
 
 def main():
     pin_ini()
-    now_time = 0
-    s_time = 0
-    p_time = 0
-    temp_c = ''
-    o_time = ''
-    c_time = ''
-    select = ''
-    wall = ''
-    everyday = ''
-    remote = ''
-    button = ''
-    d = True
-    p = True
+    now_time = s_time = p_time = 0
+    temp_c = o_time = c_time = select = ''
+    wall = everyday = remote = button = ''
+    d = p = True
     t0 = 0
     mes_c = 'C0100001リモート　OFF'
     conf = ''
@@ -101,20 +92,16 @@ def main():
     t_w = False
     w_s = True
     o = True
-    time_w = 0
-    k_time = 0
-    off_time = 0
-    so_time = ''
-    sc_time = ''
+    time_w = k_time = off_time = 0
+    so_time = sc_time = ''
     manual = False
     m_s = True
     m = 0
-    xbee.atcmd('d4', OFF)
     try:
         f = uio.open('conf.txt', mode='r')
         conf = f.read()
         f.close()
-    except:
+    except OSError:
         print('設定ファイルがありません')
     xbee.transmit(addr_coordinator, 'S')
     while True:
@@ -156,12 +143,12 @@ def main():
                     d = True
                     try:
                         os.remove('conf.txt')
-                    except:
+                    except OSError:
                         pass
                     f = uio.open('conf.txt', mode='w')
                     f.write(command)
                     f.close()
-                except:
+                except SyntaxError:
                     temp_c = int(conf[0:2])
                     o_time = int(conf[2:4]) * 60 + int(conf[5:7])
                     c_time = int(conf[7:9]) * 60 + int(conf[10:12])
@@ -175,7 +162,7 @@ def main():
             if remote == '11':
                 xbee.atcmd('d6', ON)
                 mes_c = 'C0100001リモート　ON'
-                if select == '21':
+                if select == '21':  # 手動
                     xbee.atcmd('d7', OFF)
                     xbee.atcmd('d9', OFF)
                     if button == '02':
@@ -263,24 +250,21 @@ def main():
             try:
                 xbee.transmit(addr_coordinator, mes_c)
                 xbee.transmit(addr_coordinator, mes_a)
-            except:
+            except OSError:
                 xb_join()
         if s_time == 1380:
             try:
                 xbee.transmit(addr_coordinator, 'S')
                 print('time calibration')
-            except:
+            except OSError:
                 xb_join()
                 xbee.transmit(addr_coordinator, 'S')
                 print('time calibration')
-
         if not manual_sw.value():
-            print(m)  #
             m = m + 1
             if m >= 100 and m_s:
                 manual = not manual
                 m_s = False
-                print(manual)  ##
             if manual:
                 xbee.atcmd('d4', ON)
             else:
@@ -304,6 +288,7 @@ def main():
 try:
     xb_join()
     main()
-except:
+except Exception as e:
+    print(e)
     time.sleep(2)
     machine.reset()
