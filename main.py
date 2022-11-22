@@ -5,6 +5,7 @@ import machine
 import uio
 import os
 import time
+from machine import Pin
 
 ON = 5
 OFF = 4
@@ -12,6 +13,9 @@ addr_coordinator = '\x00\x00\x00\x00\x00\x00\x00\x00'
 xbee.atcmd('ID', 0x480)  # pan_id 480
 xbee.atcmd('AV', 0x00)  # ADC_reference_1.25V
 temp = machine.ADC('D1')
+manual_sw = Pin('D10', mode=Pin.IN, pull=Pin.PULL_UP)
+open_sw = Pin('D8', mode=Pin.IN, pull=Pin.PULL_UP)
+close_sw = Pin('D11', mode=Pin.IN, pull=Pin.PULL_UP)
 sl = str(binascii.hexlify(xbee.atcmd('SL')))[6:-1]
 print(sl)
 drv = ["""&{'temp':'25','o_time':'07:00','c_time':'16:00','select':'21','wall':'21','everyday':'10',\
@@ -102,6 +106,10 @@ def main():
     off_time = 0
     so_time = ''
     sc_time = ''
+    manual = False
+    m_s = True
+    m = 0
+    xbee.atcmd('d4', OFF)
     try:
         f = uio.open('conf.txt', mode='r')
         conf = f.read()
@@ -130,6 +138,8 @@ def main():
                 now_time = int(command[-6:])
                 s_time = int(now_time / 60)
             else:
+                manual = False
+                xbee.atcmd('d4', OFF)
                 try:
                     now_time = int(command[-6:])
                     s_time = int(now_time / 60)
@@ -166,6 +176,8 @@ def main():
                 xbee.atcmd('d6', ON)
                 mes_c = 'C0100001リモート　ON'
                 if select == '21':
+                    xbee.atcmd('d7', OFF)
+                    xbee.atcmd('d9', OFF)
                     if button == '02':
                         xbee.atcmd('d3', OFF)
                         xbee.atcmd('d2', ON)
@@ -180,8 +192,12 @@ def main():
                         print('OFF')
                 if select == '22':
                     if wall == '21':
+                        xbee.atcmd('d9', OFF)
+                        xbee.atcmd('d7', ON)
                         mes_c = "C0100001巻上温度:" + str(temp_c) + '℃'
                     if wall == '22' and (d or everyday == '11'):
+                        xbee.atcmd('d7', OFF)
+                        xbee.atcmd('d9', ON)
                         mes_c = "C0100001巻上時間:" + '(' + so_time + '-' + sc_time + ')'
             if select == '10':
                 xbee.atcmd('d6', OFF)
@@ -236,6 +252,7 @@ def main():
                             d = True
                         if everyday == '10' and p:
                             d = False
+                            xbee.atcmd('d9', OFF)
                             mes_c = "C0100001リモート ON"
                         o = False
             mes_a = "{0:.1f}".format(temp_a) + '℃' + "\x00"
@@ -257,6 +274,32 @@ def main():
                 xbee.transmit(addr_coordinator, 'S')
                 print('time calibration')
 
+        if not manual_sw.value():
+            print(m)  #
+            m = m + 1
+            if m >= 100 and m_s:
+                manual = not manual
+                m_s = False
+                print(manual)  ##
+            if manual:
+                xbee.atcmd('d4', ON)
+            else:
+                xbee.atcmd('d4', OFF)
+        else:
+            m = 0
+            m_s = True
+        if manual:
+            if not open_sw.value():
+                xbee.atcmd('d3', OFF)
+                xbee.atcmd('d2', ON)
+            else:
+                xbee.atcmd('d2', OFF)
+            if not close_sw.value():
+                xbee.atcmd('d2', OFF)
+                xbee.atcmd('d3', ON)
+            else:
+                xbee.atcmd('d3', OFF)
+
 
 try:
     xb_join()
@@ -264,4 +307,3 @@ try:
 except:
     time.sleep(2)
     machine.reset()
-
