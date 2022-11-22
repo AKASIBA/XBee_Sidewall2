@@ -200,7 +200,7 @@ def main():
             temp_a = temp.read() * 0.030525 - 48.3
             if remote == '11' and select == '22':  # 自動
                 if wall == '21':  # 温度
-                    if temp_c <= temp_a and k_time <= s_time:
+                    if temp_c <= temp_a - 3 and k_time <= s_time:
                         xbee.atcmd('d3', OFF)
                         xbee.atcmd('d2', ON)
                         if w_s:
@@ -208,7 +208,7 @@ def main():
                             time_w = now_time + 3
                             w_s = False
                             t_w = True
-                    if temp_c >= temp_a - 5 and k_time <= s_time:  # ヒステリシス　5
+                    if temp_c >= temp_a + 3 and k_time <= s_time:  # ヒステリシス　5
                         xbee.atcmd('d2', OFF)
                         xbee.atcmd('d3', ON)
                         if w_s:
@@ -285,10 +285,10 @@ def main():
                 xbee.atcmd('d3', OFF)
 
 
-try:
-    xb_join()
-    main()
-except Exception as e:
-    print(e)
-    time.sleep(2)
-    machine.reset()
+#try:
+xb_join()
+main()
+#except Exception as e:
+#    print(e)
+#    time.sleep(2)
+#    machine.reset()
