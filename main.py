@@ -111,6 +111,7 @@ def main():
             if now_time >= 86400:
                 now_time = 0
                 p_time = 0
+                time_calibration = True
             now_time = now_time + 1
             s_time = int(now_time / 60)
         command = packet_receive()
@@ -252,10 +253,11 @@ def main():
                 xbee.transmit(addr_coordinator, mes_a)
             except OSError:
                 xb_join()
-        if s_time == 1380:
+        if now_time == 82800 and time_calibration:
             try:
                 xbee.transmit(addr_coordinator, 'S')
                 print('time calibration')
+                time_calibration = False
             except OSError:
                 xb_join()
                 xbee.transmit(addr_coordinator, 'S')
