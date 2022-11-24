@@ -67,6 +67,7 @@ def packet_receive():
     packet = xbee.receive()
     if packet:
         payload = str(packet['payload'].decode('utf-8'))
+        print(packet)
     return payload
 
 
@@ -96,6 +97,7 @@ def main():
     so_time = sc_time = ''
     manual = False
     m_s = True
+    time_calibration = True
     m = 0
     try:
         f = uio.open('conf.txt', mode='r')
@@ -144,11 +146,12 @@ def main():
                     d = True
                     try:
                         os.remove('conf.txt')
+                        f = uio.open('conf.txt', mode='w')
+                        f.write(command)
+                        f.close()
                     except OSError:
                         pass
-                    f = uio.open('conf.txt', mode='w')
-                    f.write(command)
-                    f.close()
+
                 except SyntaxError:
                     temp_c = int(conf[0:2])
                     o_time = int(conf[2:4]) * 60 + int(conf[5:7])
@@ -187,8 +190,10 @@ def main():
                         xbee.atcmd('d7', OFF)
                         xbee.atcmd('d9', ON)
                         mes_c = "C0100001巻上時間:" + '(' + so_time + '-' + sc_time + ')'
-            if select == '10':
+            if remote == '10':
                 xbee.atcmd('d6', OFF)
+                xbee.atcmd('d7', OFF)
+                xbee.atcmd('d9', OFF)
                 mes_c = 'C0100001リモート　OFF'
         if time_w <= now_time and t_w:
             xbee.atcmd('d2', OFF)
@@ -206,7 +211,7 @@ def main():
                         xbee.atcmd('d2', ON)
                         if w_s:
                             print('temp_open')
-                            time_w = now_time + 3
+                            time_w = now_time + 5
                             w_s = False
                             t_w = True
                     if temp_c >= temp_a + 3 and k_time <= s_time:  # ヒステリシス　5
@@ -214,7 +219,7 @@ def main():
                         xbee.atcmd('d3', ON)
                         if w_s:
                             print('temp_close')
-                            time_w = now_time + 3
+                            time_w = now_time + 5
                             w_s = False
                             t_w = True
                 if wall == '22' and (d or everyday == '11'):  # 時間
@@ -222,14 +227,14 @@ def main():
                         xbee.atcmd('d3', OFF)
                         xbee.atcmd('d2', ON)
                         # if p:
-                        off_time = time.ticks_ms() + 28000
+                        off_time = time.ticks_ms() + 120000
                         print('time_open')
                         p = False
                         o = True
                     if s_time >= c_time and not p:
                         xbee.atcmd('d2', OFF)
                         xbee.atcmd('d3', ON)
-                        off_time = time.ticks_ms() + 28000
+                        off_time = time.ticks_ms() + 120000
                         print('time_close')
                         p = True
                         o = True
@@ -262,7 +267,7 @@ def main():
                 xb_join()
                 xbee.transmit(addr_coordinator, 'S')
                 print('time calibration')
-        if not manual_sw.value():
+        if remote == '11' and not manual_sw.value():
             m = m + 1
             if m >= 100 and m_s:
                 manual = not manual
@@ -287,10 +292,10 @@ def main():
                 xbee.atcmd('d3', OFF)
 
 
-#try:
-xb_join()
-main()
-#except Exception as e:
-#    print(e)
-#    time.sleep(2)
-#    machine.reset()
+try:
+    xb_join()
+    main()
+except Exception as e:
+    print(e)
+    time.sleep(2)
+    machine.reset()
