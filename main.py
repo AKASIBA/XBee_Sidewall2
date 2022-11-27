@@ -67,7 +67,6 @@ def packet_receive():
     packet = xbee.receive()
     if packet:
         payload = str(packet['payload'].decode('utf-8'))
-        print(packet)
     return payload
 
 
@@ -280,12 +279,12 @@ def main():
             m = 0
             m_s = True
         if manual:
-            if not open_sw.value():
+            if not open_sw.value() and close_sw.value():
                 xbee.atcmd('d3', OFF)
                 xbee.atcmd('d2', ON)
             else:
                 xbee.atcmd('d2', OFF)
-            if not close_sw.value():
+            if not close_sw.value() and open_sw.value():
                 xbee.atcmd('d2', OFF)
                 xbee.atcmd('d3', ON)
             else:
