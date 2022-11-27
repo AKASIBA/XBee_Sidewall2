@@ -275,6 +275,8 @@ def main():
                 xbee.atcmd('d4', ON)
             else:
                 xbee.atcmd('d4', OFF)
+                xbee.atcmd('d2', OFF)
+                xbee.atcmd('d3', OFF)
         else:
             m = 0
             m_s = True
