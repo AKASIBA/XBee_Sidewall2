@@ -88,7 +88,7 @@ def main():
     t0 = 0
     mes_c = 'C0100001リモート　OFF'
     conf = ''
-    c = True
+    c = False
     t_w = False
     w_s = True
     o = True
@@ -102,6 +102,7 @@ def main():
         f = uio.open('conf.txt', mode='r')
         conf = f.read()
         f.close()
+        c = True
     except OSError:
         print('設定ファイルがありません')
     xbee.transmit(addr_coordinator, 'S')
@@ -118,7 +119,6 @@ def main():
         command = packet_receive()
         if c:
             command = conf
-            c = False
         if command:
             print(command)
             if command == 'sibainu':
@@ -143,15 +143,17 @@ def main():
                     so_time = command[2:7]
                     sc_time = command[7:12]
                     d = True
-                    try:
-                        os.remove('conf.txt')
+                    if not c:
+                        try:
+                            os.remove('conf.txt')
+                        except OSError:
+                            pass
                         f = uio.open('conf.txt', mode='w')
                         f.write(command)
                         f.close()
-                    except OSError:
-                        pass
-
-                except SyntaxError:
+                        print('設定ファイルOK')
+                except Exception as e1:
+                    print(e1)
                     temp_c = int(conf[0:2])
                     o_time = int(conf[2:4]) * 60 + int(conf[5:7])
                     c_time = int(conf[7:9]) * 60 + int(conf[10:12])
@@ -291,6 +293,7 @@ def main():
                 xbee.atcmd('d3', ON)
             else:
                 xbee.atcmd('d3', OFF)
+        c = False
 
 
 try:
